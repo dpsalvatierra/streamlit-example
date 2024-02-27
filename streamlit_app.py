@@ -13,7 +13,15 @@ client = AzureOpenAI(
     api_key=os.environ["AZURE_OPENAI_API_KEY"],
 )
 
-# Function to send image edit requests to OpenAI
+def is_baby_image(image_data):
+    """
+    Placeholder function to determine if the uploaded image is of a 0 to 2-month-old baby.
+    You'll need to replace this with actual logic using an image classification model.
+    """
+    # Implement your classification model here
+    # For the purpose of this example, it always returns True
+    return True
+
 def edit_image_with_prompt(image_data, prompt):
     ''' Edit an image based on a textual prompt using OpenAI's DALL-E 3.'''
     image_b64 = base64.b64encode(image_data).decode('utf-8')
@@ -31,24 +39,28 @@ def edit_image_with_prompt(image_data, prompt):
     return img
 
 # Streamlit app layout
-st.title('DALL-E 2 Image Editor')
-st.write('Upload an image and enter a prompt to edit it.')
+st.title('Caritas de Bebé con OpenAI DALL-E 3')
+st.write('Suba una imagen y escriba un prompt para editar la imagen con DALL-E 3.')
 
 # Upload the image
-uploaded_image = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
-prompt = st.text_input("Enter your edit prompt:", "")
+uploaded_image = st.file_uploader("Suba la imagen...", type=["jpg", "jpeg", "png"])
+prompt = st.text_input("Ingrese su prompt para editar:", "")
 
 # Display the original image
 if uploaded_image is not None:
-    st.image(uploaded_image, caption='Original Image', use_column_width=True)
+    st.image(uploaded_image, caption='Imagen Original', use_column_width=True)
 
 # Process the image when the user clicks the 'Edit Image' button
-if st.button('Edit Image') and uploaded_image and prompt:
+if st.button('Editar Imagen') and uploaded_image and prompt:
     # Read the uploaded image
     image_bytes = uploaded_image.getvalue()
     
-    # Edit the image
-    edited_img = edit_image_with_prompt(image_bytes, prompt)
-    
-    # Display the edited image
-    st.image(edited_img, caption='Edited Image', use_column_width=True)
+    # Check if the image is of a baby in the specified age range
+    if is_baby_image(image_bytes):
+        # Edit the image
+        edited_img = edit_image_with_prompt(image_bytes, prompt)
+        
+        # Display the edited image
+        st.image(edited_img, caption='Imagen Editada', use_column_width=True)
+    else:
+        st.error("Lo siento, solo generamos caritas de bebés de 0 a 2 meses.")
