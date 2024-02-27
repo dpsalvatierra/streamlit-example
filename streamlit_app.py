@@ -1,40 +1,54 @@
-import altair as alt
-import numpy as np
-import pandas as pd
 import streamlit as st
+from openai import AzureOpenAI
+import os
+import requests
+from PIL import Image
+from io import BytesIO
+import base64
 
-"""
-# Welcome to Streamlit!
+# Initialize the OpenAI API client
+client = AzureOpenAI(
+    api_version="2024-02-15-preview",
+    azure_endpoint="https://dalleai3.openai.azure.com/",
+    api_key=os.environ["AZURE_OPENAI_API_KEY"],
+)
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+# Function to send image edit requests to OpenAI
+def edit_image_with_prompt(image_data, prompt):
+    ''' Edit an image based on a textual prompt using OpenAI's DALL-E 3.'''
+    image_b64 = base64.b64encode(image_data).decode('utf-8')
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+    response = client.images.edit(
+        model="Dalle3",
+        image=image_b64,
+        prompt=prompt,
+    )
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+    # Assuming the response has a direct link to the image
+    image_url = response['data']['url']
+    response = requests.get(image_url)
+    img = Image.open(BytesIO(response.content))
+    return img
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
+# Streamlit app layout
+st.title('DALL-E 2 Image Editor')
+st.write('Upload an image and enter a prompt to edit it.')
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+# Upload the image
+uploaded_image = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+prompt = st.text_input("Enter your edit prompt:", "")
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
+# Display the original image
+if uploaded_image is not None:
+    st.image(uploaded_image, caption='Original Image', use_column_width=True)
 
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+# Process the image when the user clicks the 'Edit Image' button
+if st.button('Edit Image') and uploaded_image and prompt:
+    # Read the uploaded image
+    image_bytes = uploaded_image.getvalue()
+    
+    # Edit the image
+    edited_img = edit_image_with_prompt(image_bytes, prompt)
+    
+    # Display the edited image
+    st.image(edited_img, caption='Edited Image', use_column_width=True)
