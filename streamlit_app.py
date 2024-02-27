@@ -23,12 +23,16 @@ def is_baby_image(image_data):
     return True
 
 def edit_image_with_prompt(image_data, prompt):
-    ''' Edit an image based on a textual prompt using OpenAI's DALL-E 3.'''
-    image_b64 = base64.b64encode(image_data).decode('utf-8')
+    '''Edit an image based on a textual prompt using OpenAI's DALL-E 3.'''
 
+    # Assuming image_data is the binary content of the image file
+    # If image_data is base64-encoded, you first need to decode it:
+    # image_bytes = base64.b64decode(image_data)
+
+    # Directly pass the binary content without base64 encoding
     response = client.images.edit(
         model="Dalle3",
-        image=image_b64,
+        image=image_data,  # Pass the binary data directly
         prompt=prompt,
     )
 
@@ -51,16 +55,14 @@ if uploaded_image is not None:
     st.image(uploaded_image, caption='Imagen Original', use_column_width=True)
 
 # Process the image when the user clicks the 'Edit Image' button
-if st.button('Editar Imagen') and uploaded_image and prompt:
-    # Read the uploaded image
+if st.button('Edit Image') and uploaded_image and prompt:
+    # Read the uploaded image as binary data
     image_bytes = uploaded_image.getvalue()
     
-    # Check if the image is of a baby in the specified age range
-    if is_baby_image(image_bytes):
-        # Edit the image
-        edited_img = edit_image_with_prompt(image_bytes, prompt)
-        
-        # Display the edited image
-        st.image(edited_img, caption='Imagen Editada', use_column_width=True)
-    else:
-        st.error("Lo siento, solo generamos caritas de bebés de 0 a 2 meses.")
+    # Now pass this binary data to the function
+    edited_img = edit_image_with_prompt(image_bytes, prompt)
+    
+    # Display the edited image
+    st.image(edited_img, caption='Imagen Editada', use_column_width=True)
+else:
+    st.error("Lo siento, solo generamos caritas de bebés de 0 a 2 meses.")
